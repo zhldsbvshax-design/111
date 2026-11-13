@@ -1,0 +1,81 @@
+import asyncio
+import os
+from telethon import TelegramClient, events
+
+ACCOUNTS = [
+    {
+        "name": "akk_1",
+        "api_id": 38512980,  # Бірінші аккаунттың ID-і (қажет болса өзгертіңіз)
+        "api_hash": "a0b857700422c50cbcb2da756711c74e",  # Бірінші аккаунттың HASH-і
+    },
+    {
+        "name": "akk_2",
+        "api_id": 38512998,
+        "api_hash": "6072900771694c1f35deccb110762b44",
+    },
+    {
+        "name": "akk_3",
+        "api_id": 34389570,
+        "api_hash": "69075aa9692f0e1f976c6b6f2848075f",
+    },
+    {
+        "name": "akk_4",
+        "api_id": 39458147,
+        "api_hash": "8262e7eb8aa886edc30bc032523102c7",
+    },
+    {
+        "name": "akk_5",
+        "api_id": 38514932,
+        "api_hash": "165ed2aa0574d8e08ffde34f466dbbedd",
+    },
+    {
+        "name": "akk_6",
+        "api_id": 30786986,
+        "api_hash": "2ccb14d62e509f4ce1352a56cc396f11",
+    },
+]
+
+SOURCE_CHAT_ID = -1002479895523
+TARGET_CHAT_ID = -1004340283614
+
+
+async def start_client(acc):
+    while True:
+        try:
+            client = TelegramClient(
+                f"sessions/{acc['name']}",
+                acc["api_id"],
+                acc["api_hash"],
+                connection_retries=None,
+                auto_reconnect=True,
+            )
+
+            @client.on(events.NewMessage(chats=SOURCE_CHAT_ID))
+            async def intercept_promo(event):
+                try:
+                    message_text = event.raw_text
+                    if message_text and (
+                        "promo" in message_text.lower()
+                        or "промо" in message_text.lower()
+                    ):
+                        await client.send_message(TARGET_CHAT_ID, message_text)
+                except Exception:
+                    pass
+
+            await client.start()
+            await client.run_until_disconnected()
+        except Exception:
+            await asyncio.sleep(5)
+
+
+async def main():
+    tasks = [start_client(acc) for acc in ACCOUNTS]
+    await asyncio.gather(*tasks)
+
+
+if __name__ == "__main__":
+    os.makedirs("sessions", exist_ok=True)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
